@@ -1,0 +1,57 @@
+<!DOCTYPE html><html lang='pl'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1.0'><title>Technik24 Calendar Live</title><script src='https://cdn.tailwindcss.com'></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body class='bg-slate-950 text-white min-h-screen'><div class='grid md:grid-cols-[260px_1fr] min-h-screen'><aside class='border-r border-slate-800 p-4'><h1 class='text-2xl font-black'>TECHNIK<span class='text-yellow-400'>24</span></h1><p class='text-slate-400 text-sm'>Panel Admina</p><a href='admin.html' class='mt-4 inline-block bg-red-600 px-4 py-2 rounded-xl'>Wyloguj</a></aside><main class='p-4'><div class='grid grid-cols-[50px_1fr_50px_auto_auto] gap-2 items-center mb-4'><button onclick='changeMonth(-1)' class='bg-slate-800 px-3 py-2 rounded-xl'>←</button><h2 id='title' class='text-3xl font-black text-center'></h2><button onclick='changeMonth(1)' class='bg-slate-800 px-3 py-2 rounded-xl mr-3'>→</button><button onclick='openModal()' class='bg-blue-600 px-4 py-2 rounded-xl'>Dodaj termin</button><a href='index.html' class='bg-slate-800 px-4 py-2 rounded-xl'>Strona</a></div><div class='grid grid-cols-7 gap-2 text-center text-sm mb-2'><div>Pon</div><div>Wt</div><div>Śr</div><div>Czw</div><div>Pt</div><div class='text-blue-400 font-bold'>Sob</div><div class='text-red-400 font-bold'>Niedz</div></div><div id='calendar' class='grid grid-cols-7 gap-2'></div></main></div><div id='modal' class='hidden fixed inset-0 bg-black/70 items-center justify-center p-4'><div class='bg-slate-900 w-full max-w-xl rounded-2xl p-6 border border-slate-700'><h3 class='text-2xl font-black mb-4'>Nowy termin</h3><div class='grid md:grid-cols-2 gap-3'><input id='client' placeholder='Klient' class='p-3 rounded-xl bg-slate-800'><input id='phone' placeholder='Telefon' class='p-3 rounded-xl bg-slate-800'><input id='city' placeholder='Miejscowość' class='p-3 rounded-xl bg-slate-800'><input id='address' placeholder='Adres' class='p-3 rounded-xl bg-slate-800'><input id='date' placeholder='2026-4-22' class='p-3 rounded-xl bg-slate-800'><select id='time' class='p-3 rounded-xl bg-slate-800'><option>11:00-12:00</option><option>12:00-13:00</option><option>13:00-14:00</option><option>14:00-15:00</option></select><input id='service' placeholder='Usługa' class='p-3 rounded-xl bg-slate-800 md:col-span-2'><textarea id='note' placeholder='Opis' class='p-3 rounded-xl bg-slate-800 md:col-span-2'></textarea></div><div class='flex gap-2 mt-4'><button onclick='saveForm()' class='bg-blue-600 px-4 py-2 rounded-xl'>Zapisz</button><button onclick='closeModal()' class='bg-slate-700 px-4 py-2 rounded-xl'>Anuluj</button></div></div></div><script>let current=new Date(2026,3,1);let events=JSON.parse(localStorage.getItem('technik24-events')||'{}');const months=['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];const holidays={'2026-1-1':'Nowy Rok','2026-1-6':'Trzech Króli','2026-4-5':'Wielkanoc','2026-4-6':'Pon. Wielkanocny','2026-5-1':'Święto Pracy','2026-5-3':'Konstytucja 3 Maja','2026-5-24':'Zesłanie Ducha Św.','2026-6-4':'Boże Ciało','2026-8-15':'Wniebowzięcie NMP','2026-11-1':'Wszystkich Świętych','2026-11-11':'Święto Niepodległości','2026-12-24':'Wigilia','2026-12-25':'Boże Narodzenie','2026-12-26':'2 Dzień Świąt'};const birthdays={'2026-9-10':'🎂 Ola','2026-10-30':'🎂 Roksanka','2026-12-10':'🎂 Alanek'};function key(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')}function render(){const y=current.getFullYear(),m=current.getMonth();title.innerText=months[m]+' '+y;const first=new Date(y,m,1),start=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();let html='';for(let i=0;i<start;i++)html+=blank();for(let d=1;d<=days;d++){let k=key(y,m,d),list=events[k]||[];html+=cell(d,list,k)}calendar.innerHTML=html}function blank(){return `<div class='h-28 rounded-xl border border-slate-900'></div>`}function cell(day,list,k){const p=k.split('-');const dt=new Date(p[0],p[1]-1,p[2]);const wd=dt.getDay();let color='font-bold';if(wd===6)color='font-bold text-blue-400';if(wd===0||holidays[k])color='font-bold text-red-400';return `<div onclick="handleDayClick('${k}')" class='h-28 rounded-xl border border-slate-800 p-2 bg-slate-900 overflow-hidden cursor-pointer'><div class='${color}'>${day}</div>${holidays[k]?`<div class='mt-1 text-xs bg-red-700 rounded p-1'>${holidays[k]}</div>`:''}${birthdays[k]?`<div class='mt-1 text-xs bg-pink-600 rounded p-1'>${birthdays[k]}</div>`:''}${list.map(x=>`<div class='mt-1 text-xs ${x.block?'bg-red-600':'bg-blue-600'} rounded p-1'>${x.time} ${x.client||''}</div>`).join('')}</div>`}function changeMonth(v){current.setMonth(current.getMonth()+v);render()}function openModal(d=''){if(d)date.value=d;modal.classList.remove('hidden');modal.classList.add('flex')}function closeModal(){modal.classList.add('hidden');modal.classList.remove('flex')}function saveForm(){const d=date.value,t=time.value;if(!events[d])events[d]=[];events[d].push({time:t,client:client.value,phone:phone.value,city:city.value,address:address.value,service:service.value,note:note.value});localStorage.setItem('technik24-events',JSON.stringify(events));closeModal();render()}render();</script><script>
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!window.supabase) return;
+
+  const supabase = window.supabase.createClient(
+    'https://gjpfpejqfiyibvnhimle.supabase.co',
+    'sb_publishable_7ddB5nnB44gvmPzds0TEvg_pzdWssTp'
+  );
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*');
+
+  if (error || !data) return;
+
+  data.forEach(item => {
+    if (!item.date || !item.time) return;
+
+    const d = item.date;
+
+    if (!events[d]) events[d] = [];
+
+    events[d].push({
+  time: item.time,
+  client: item.name || '',
+  phone: item.phone || '',
+  city: item.city || '',
+  address: item.address || '',
+  service: item.service || '',
+  note: item.note || ''
+});
+
+  render();
+});
+function handleDayClick(dateKey){
+  const list = events[dateKey] || [];
+
+  if(list.length > 0){
+    let text = '';
+
+    list.forEach(x => {
+      text += 
+        'Godzina: ' + x.time + '\n' +
+        'Klient: ' + (x.client || '-') + '\n' +
+        'Telefon: ' + (x.phone || '-') + '\n' +
+        'Adres: ' + (x.address || '-') + '\n' +
+        'Usługa: ' + (x.service || '-') + '\n' +
+        'Opis: ' + (x.note || '-') + '\n\n';
+    });
+
+    alert(text);
+  } else {
+    openModal(dateKey);
+  }
+}
+
+</script></body></html>
